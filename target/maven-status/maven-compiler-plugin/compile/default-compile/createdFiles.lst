@@ -1,0 +1,7 @@
+com\telcel\notifica\carga\factura\ConsultasDAO.class
+com\telcel\notifica\carga\envio\EnvioNotificaFacturaNva.class
+com\telcel\notifica\carga\factura\ConnectionBCTR.class
+com\telcel\notifica\carga\utils\GetUtil.class
+com\telcel\notifica\carga\utils\ConfigManager.class
+com\telcel\notifica\carga\factura\Factura.class
+com\telcel\notifica\carga\factura\ConnectionNva.class
