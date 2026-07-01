@@ -31,7 +31,7 @@ public class ConsultasDAO {
                     + "WHERE FACTURA = ? "
                     + "AND ROWID = ?";
 
-    public List<Factura> checaCargaBCTR() {
+    public List<Factura> checaCarga() {
 
         List<Factura> facturas = new ArrayList<>();
 
@@ -59,7 +59,7 @@ public class ConsultasDAO {
         return facturas;
     }
 
-    public void actualizaFacturaBCTR(Set<String> notificadas) {
+    public void actualizaFactura(Set<String> notificadas) {
 
         try (Connection con = ConnectionBCTR.getConnection();
              PreparedStatement pstm = con.prepareStatement(SQL_ACTUALIZA)) {
