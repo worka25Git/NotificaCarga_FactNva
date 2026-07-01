@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 
 public class ConsultasDAO {
   private static Logger logger = Logger.getLogger(EnvioNotificaFacturaNva.class.getName());
-  
+
   
   public ArrayList<Factura> checaCargaBCTR() throws SQLException {
     ArrayList<Factura> Factura = new ArrayList<Factura>();

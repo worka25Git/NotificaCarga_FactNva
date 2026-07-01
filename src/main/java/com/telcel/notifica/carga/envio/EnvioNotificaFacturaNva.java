@@ -29,23 +29,16 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class EnvioNotificaFacturaNva {
-  private String cadena = "";
   
   private String mensaje = "";
   
   private String RespSms = "";
-  
-  private ArrayList<Factura> consultaFactura = new ArrayList<Factura>();
-  
-  private ArrayList<Factura> consultaFacturaCentral = new ArrayList<Factura>();
+
+  private List<Factura> consultaFacturaCentral = new ArrayList<>();
   
   private ArrayList<Factura> factEnviadas = new ArrayList<Factura>();
   
   private Set<String> factEnvia = new HashSet<String>();
-  
-  private String cadCorreos = "";
-  
-  private String cadTelefonos = "";
   
   private String text = "";
   
@@ -85,8 +78,6 @@ public class EnvioNotificaFacturaNva {
       logger.info("========================INICIA PROCESO==========================");
 
       obtenerFacturas();
-
-      procesarFacturasNva();
 
       procesarFacturasBolsaCentralizada();
 
@@ -129,30 +120,12 @@ public class EnvioNotificaFacturaNva {
 
     logger.info("COMENZANDO A OBTENER LAS FACTURAS...");
 
-    consultaFactura = dbs.checaCarga();
-
     consultaFacturaCentral = dbs.checaCargaBCTR();
 
     logger.info("TERMINO DE OBTENER LAS FACTURAS...");
 
   }
 
-
-  private void procesarFacturasNva() throws Exception {
-
-    if (consultaFactura.isEmpty()) {
-      logger.info("No hay facturas a enviar en la Nueva Arquitectura.");
-      return;
-    }
-
-    for (Factura factura : consultaFactura) {
-      procesarFactura(factura, false);
-    }
-
-    dbs.actualizaFactura(factEnvia);
-    factEnvia.clear();
-
-  }
 
   private void procesarFacturasBolsaCentralizada() throws Exception {
 
