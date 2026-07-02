@@ -24,7 +24,7 @@ public class EnvioNotificaFacturaNva {
 
     private static SimpleFormatter formatter = new SimpleFormatter();
 
-    private static final EnviaMail ENVIA_CORREO = new EnviaMail("info.comercio.movil", "info.comercio.movil");
+    private EnviaMail enviaCorreo;
 
     static {
         TimeZone tz = TimeZone.getTimeZone("America/Mexico_City");
@@ -44,6 +44,13 @@ public class EnvioNotificaFacturaNva {
     private List<Factura> notificaCEMFact = new ArrayList<>();
 
     private final ConsultasDAO consultasDAO = new ConsultasDAO();
+
+
+    public EnvioNotificaFacturaNva() {
+        this.enviaCorreo = new EnviaMail(
+                ConfigManager.get("correo.usuario"),
+                ConfigManager.get("correo.password"));
+    }
 
     public static void main(String[] args) {
         try {
@@ -195,170 +202,6 @@ public class EnvioNotificaFacturaNva {
         return telefonos.toString();
     }
 
-/*
-  public void ObtenerContactosFactura() throws Exception {
-    try {
-      DateFormat format = new SimpleDateFormat("'BitacoraNotificaNva_'yyyyMMdd'.log'");
-      String cadenaArchivo = format.format(new Date());
-
-      String rutaLog = ConfigManager.get("ruta.logs");
-
-      (handler = new FileHandler(
-              rutaLog + cadenaArchivo,
-              true)).setFormatter(formatter);
-
-
-      logger.addHandler(handler);
-      logger.setLevel(Level.FINE);
-      logger.log(Level.INFO, "========================INICIA PROCESO==========================");
-      System.out.println("========================INICIA PROCESO==========================");
-      logger.log(Level.INFO, "COMENZANDO A OBTENER LAS FACTURAS...");
-      for (int i = 0; i <= 1; i++) {
-        if (i == 0) {
-          this.consultaFactura = this.dbs.checaCarga();
-            System.out.println("No hacer nada");
-        } else if (i == 1) {
-          this.consultaFacturaCentral = this.dbs.checaCargaBCTR();
-        } 
-      } 
-      logger.log(Level.INFO, "TERMINO DE OBTENER LAS FACTURAS...");
-      if (!this.consultaFactura.isEmpty()) {
-        System.out.println("-------Iteramos facturas de la Nva Arq-------");
-        for (Factura facturaCargada : this.consultaFactura) {
-          this.cadena = facturaCargada.getNombre();
-          logger.log(Level.INFO, "COMENZANDO A OBTENER LOS CONTACTOS...");
-          List<Factura> dest = GetUtil.getDestinatariosFactura(this.cadena);
-          for (Factura contfactura : dest) {
-            if (!contfactura.getCorreo().equals("")) {
-              if (!this.cadCorreos.equals("")) {
-                this.cadCorreos += contfactura.getCorreo() + ", ";
-                continue;
-              } 
-              this.cadCorreos = contfactura.getCorreo() + ", ";
-            } 
-          } 
-          this.cadTelefonos = facturaCargada.getTelefonos();
-          logger.log(Level.INFO, "TERMINO DE OBTENER LOS CONTACTOS...");
-          //EnviaCorreoySMS(this.cadena, this.cadCorreos, this.cadTelefonos, facturaCargada.getFactura(), facturaCargada.getFecha(), String.valueOf(facturaCargada.getMonto_compra()), String.valueOf(facturaCargada.getRegion()), facturaCargada.getObservaciones(), facturaCargada.getId_factura());
-          this.cadCorreos = "";
-          this.cadTelefonos = "";
-          this.notificaCEMFact.add(new Factura(this.cadena, facturaCargada.getFactura(), facturaCargada.getMonto_compra(), facturaCargada.getRegion(), this.correoEnvi, facturaCargada.getFechaTelcel(), this.SMSEnvi));
-          this.correoEnvi = "";
-          this.SMSEnvi = "";
-        } 
-        logger.log(Level.INFO, "INICIO DE ACTUALIZACION DE FACTURAS...");
-        this.dbs.actualizaFactura(this.factEnvia);
-        this.factEnvia = new HashSet<String>();
-        logger.log(Level.INFO, "TERMINO DE ACTUALIZAR LA FACTURAS...");
-        System.out.println("-------Termino de Iterar facturas de la Nva Arq-------");
-      } else {
-        System.out.println("No hay facturas a Enviar en la Nva Arq");
-      } 
-      //BOLSA_CENTRALIZADA
-      if (!this.consultaFacturaCentral.isEmpty()) {
-        System.out.println("Iteramos facturas de la Bolsa Central...");
-        for (Factura FacturaCentral : this.consultaFacturaCentral) {
-          this.cadena = FacturaCentral.getNombre();
-          logger.log(Level.INFO, "COMENZANDO A OBTENER LOS CONTACTOS...");
-          List<Factura> dest = GetUtil.getDestinatariosFactura(this.cadena);
-          for (Factura contfactura : dest) {
-            if (!contfactura.getCorreo().equals(""))
-              if (!this.cadCorreos.equals("")) {
-                this.cadCorreos += contfactura.getCorreo() + ", ";
-              } else {
-                this.cadCorreos = contfactura.getCorreo() + ", ";
-              }  
-            if (!contfactura.getTelefonos().equals("")) {
-              if (!this.cadTelefonos.equals("")) {
-                this.cadTelefonos += contfactura.getTelefonos() + "|";
-                continue;
-              } 
-              System.out.println("SMS");
-              this.cadTelefonos = contfactura.getTelefonos() + "|";
-            } 
-          } 
-          logger.log(Level.INFO, "TERMINO DE OBTENER LOS CONTACTOS...");
-          EnviaCorreoySMS(this.cadena, this.cadCorreos, this.cadTelefonos, FacturaCentral.getFactura(), FacturaCentral.getFecha(), String.valueOf(FacturaCentral.getMonto_compra()), String.valueOf(FacturaCentral.getRegion()), FacturaCentral.getObservaciones(), FacturaCentral.getId_factura());
-          this.cadCorreos = "";
-          this.cadTelefonos = "";
-          this.notificaCEMFact.add(new Factura(this.cadena, FacturaCentral.getFactura(), FacturaCentral.getMonto_compra(), FacturaCentral.getRegion(), this.correoEnvi, FacturaCentral.getFechaTelcel(), this.SMSEnvi));
-          this.correoEnvi = "";
-          this.SMSEnvi = "";
-        } 
-        logger.log(Level.INFO, "INICIO DE ACTUALIZACION DE FACTURAS CENTRALIZADA...");
-        this.dbs.actualizaFacturaBCTR(this.factEnvia);
-        this.factEnvia = new HashSet<String>();
-        logger.log(Level.INFO, "TERMINO DE ACTUALIZAR LA FACTURAS CENTRALIZADA...");
-        System.out.println("-------Termino de Iterar facturas de la Bolsa Centralizada-------");
-      } else {
-        System.out.println("No hay facturas a Enviar en Bolsa Centralizada");
-      } 
-      logger.log(Level.INFO, "COMENZANDO A PREPARAR EL CORREO PARA NOTIFICAR A CEM...");
-      if (!this.notificaCEMFact.isEmpty()) {
-        StringBuffer tabEnvios = GetUtil.creaTablaNotificaCEM(this.notificaCEMFact);
-        if (!tabEnvios.equals("")) {
-          this.cadCorreos = "comercio.electronico@mail.telcel.com";
-          if (!this.cadCorreos.equals("")) {
-            Calendar cal = Calendar.getInstance();
-            int hora = cal.get(11);
-            int minuto = cal.get(12);
-            String saludo = "";
-            Date dat = new Date();
-            SimpleDateFormat sp = new SimpleDateFormat("yyyyMMdd");
-            if (hora < 12) {
-              saludo = "Buenos D&iacute;as";
-            } else if (hora >= 12 && hora < 19) {
-              saludo = "Buenas Tardes";
-            } else {
-              saludo = "Buenas Noches";
-            } 
-            EnviaCorreo.setFrom("info.comercio.movil@mail.telcel.com");
-            EnviaCorreo.setTo(this.cadCorreos);
-            if (minuto < 30) {
-              this.text = " <html> <head> </head> <body> <div style=\"color: 'navy'; font-family: 'Arial'; font-size:18 px\" ><a name=\"INIT\">" + saludo + ":<br><br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por este medio se les informa sobre el envio de notificacion de Carga de facturas a las Cadenas de la Nva Arq y Bolsa Centralizada de las " + hora + ":00 hrs.<br><br>" + tabEnvios.toString() + "<br><br>";
-            } else {
-              this.text = " <html> <head> </head> <body> <div style=\"color: 'navy'; font-family: 'Arial'; font-size:18 px\" ><a name=\"INIT\">" + saludo + ":<br><br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por este medio se les informa sobre el envio de notificacion de Carga de facturas a las Cadenas de la Nva Arq y Bolsa Centralizada de las " + hora + ":30 hrs.<br><br>" + tabEnvios.toString() + "<br><br>";
-            } 
-            this.firma = GetUtil.getFirmaComercioElectronico("25813700", "3976", "25813976");
-            if (!this.text.toString().equals("")) {
-              if (minuto < 30) {
-                EnviaCorreo.setSubject("INFORME SOBRE NOTIFICACION DE FACTURAS PARA CADENAS DE LA NVA ARQ Y BOLSA CENTRALIZADA DE LAS " + hora + ":00 HRS.");
-              } else {
-                EnviaCorreo.setSubject("INFORME SOBRE NOTIFICACION DE FACTURAS PARA CADENAS DE LA NVA ARQ Y BOLSA CENTRALIZADA DE LAS " + hora + ":30 HRS.");
-              } 
-              EnviaCorreo.addContent(this.text + "</br></br><table align='center'><tr><td align='center'>" + this.firma + "</td></tr></table></div></body></html>");
-              System.out.println("conectado...");
-              System.out.println("Se enviara el informe de facturas para cadenas de la Nva Arq y Bolsa Centralizada");
-              System.out.println("Los contactos a enviar son: " + this.cadCorreos);
-              System.out.println("El mensaje a enviar es: " + this.text);
-              EnviaCorreo.sendMultipart();
-              this.cadCorreos = "";
-              this.text = "";
-              this.firma = "";
-              EnviaCorreo = new EnviaMail("info.comercio.movil", "info.comercio.movil");
-              System.out.println("mensaje enviado");
-            } 
-          } else {
-            System.out.println("No hay contactos para enviar correo de informe de facturas");
-          } 
-        } else {
-          System.out.println("No se creo la tabla para los envios");
-        } 
-      } else {
-        logger.log(Level.INFO, "NO SE CARGARON FACTURAS PARA ESTA HORA...");
-        System.out.println("No Se cargaron facturas para esta hora...");
-      } 
-      logger.log(Level.INFO, "TERMINO EL ENVIO DE CORREO PARA NOTIFICAR A CEM...");
-      System.out.println("========================TERMINO PROCESO==========================");
-      logger.log(Level.INFO, "========================TERMINO PROCESO==========================");
-    } catch (Exception ex) {
-      logger.log(Level.SEVERE, "Fallo proceso:" + ex);
-      ex.printStackTrace();
-    } 
-  }
-
- */
-
     public void enviaCorreoySMS(Factura factura, String correos, String telefonos) {
         enviarCorreo(factura, correos);
         enviarSMS(factura, telefonos);
@@ -411,22 +254,22 @@ public class EnvioNotificaFacturaNva {
                         + ".<br><br>";
 
         String firma = GetUtil.getFirmaComercioElectronico(
-                "25813700",
-                "3976",
-                "25813976");
+                ConfigManager.get("firma.telefono1"),
+                ConfigManager.get("firma.extension"),
+                ConfigManager.get("firma.telefono2"));
 
         try {
-            ENVIA_CORREO.setFrom("info.comercio.movil@mail.telcel.com");
-            ENVIA_CORREO.setTo(correos);
-            ENVIA_CORREO.setSubject("NOTIFICACION DE FACTURA PARA " + factura.getNombre());
+            this.enviaCorreo.setFrom(ConfigManager.get("correo.remitente"));
+            this.enviaCorreo.setTo(correos);
+            this.enviaCorreo.setSubject("NOTIFICACION DE FACTURA PARA " + factura.getNombre());
 
-            ENVIA_CORREO.addContent(
+            this.enviaCorreo.addContent(
                     texto
                             + "</br></br><table align='center'><tr><td align='center'>"
                             + firma
                             + "</td></tr></table></div></body></html>");
 
-            ENVIA_CORREO.sendMultipart();
+            this.enviaCorreo.sendMultipart();
             correoEnviado = "OK";
 
             factEnvia.add(factura.getFactura() + ",0," + factura.getIdFactura());
@@ -456,7 +299,8 @@ public class EnvioNotificaFacturaNva {
         NumberFormat nf = NumberFormat.getInstance();
 
         String mensaje =
-                "Se cargo una factura DISTEL num: "
+                "Se cargo una factura " + factura.getNombre()
+                        + " num: "
                         + factura.getFactura()
                         + " con fecha: "
                         + factura.getFecha()
@@ -466,6 +310,7 @@ public class EnvioNotificaFacturaNva {
                         + factura.getRegion()
                         + " Obs: "
                         + factura.getObservaciones();
+        logger.info("Mensaje a enviar: " + mensaje);
 
         String[] telefonosArray = telefonos.split("\\|");
 

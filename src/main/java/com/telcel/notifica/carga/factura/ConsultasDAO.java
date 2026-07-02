@@ -1,9 +1,6 @@
 package com.telcel.notifica.carga.factura;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -14,16 +11,16 @@ public class ConsultasDAO {
 
     private static final Logger logger = Logger.getLogger(ConsultasDAO.class.getName());
 
-    private static final String SQL_CONSULTA = "SELECT CL.NOMBRE, LF.FACTURA, LF.ROWID, LF.FECHA, "
+    private static final String SQL_CONSULTA = "SELECT CL.NOMBRE, LF.FACTURA, LF.ROWID AS ID_FACTURA, LF.FECHA, "
             + "LF.MONTO_COMPRA, LF.RFC, LF.STATUS, LF.REGION, "
-            + "SUBSTR(LF.OBSERVACIONES,0,58), LF.FECHA_TELCEL "
+            + "SUBSTR(LF.OBSERVACIONES,0,58) AS OBSERVACIONES, LF.FECHA_TELCEL "
             + "FROM LOG_FAC_SAP LF, CLIENTE CL "
             + "WHERE MENSAJE='1' "
             + "AND LF.RFC = CL.RFC "
             + "AND TIPO_BOLSA = '1' "
             + "AND LF.TIPO <> 'A' "
             + "AND LF.STATUS <> 'C' "
-            + "ORDER BY CL.NOMBRE";;
+            + "ORDER BY CL.NOMBRE";
 
     private static final String SQL_ACTUALIZA =
             "UPDATE LOG_FAC_SAP "
@@ -39,12 +36,20 @@ public class ConsultasDAO {
              PreparedStatement pstm = con.prepareStatement(SQL_CONSULTA);
              ResultSet rs = pstm.executeQuery()) {
 
+            ResultSetMetaData meta = rs.getMetaData();
+
+            System.out.println("===== COLUMNAS DEVUELTAS POR ORACLE =====");
+
+            for (int i = 1; i <= meta.getColumnCount(); i++) {
+                System.out.println(i + " -> " + meta.getColumnLabel(i));
+            }
+            System.out.println("=========================================");
             while (rs.next()) {
 
                 facturas.add(new Factura(
                         rs.getString("NOMBRE"),
                         rs.getString("FACTURA"),
-                        rs.getString("ROWID"),
+                        rs.getString("ID_FACTURA"),
                         rs.getString("FECHA"),
                         rs.getLong("MONTO_COMPRA"),
                         rs.getInt("REGION"),

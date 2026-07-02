@@ -31,10 +31,13 @@ public class GetUtil {
             String linea;
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
+                System.out.println("Linea leida: " + linea);
                 if (linea.isEmpty() || linea.contains("final")) {
                     continue;
                 }
                 String[] datos = linea.split("\\|");
+                System.out.println("Cadena BD: " + cadena);
+                System.out.println("Cadena archivo: " + datos[1]);
                 if (datos.length < 4) {
                     continue;
                 }
