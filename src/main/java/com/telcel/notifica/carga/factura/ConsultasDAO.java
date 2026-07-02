@@ -1,5 +1,9 @@
 package com.telcel.notifica.carga.factura;
 
+import com.telcel.notifica.carga.mapper.FacturaMapper;
+import com.telcel.notifica.carga.provider.DatabaseProvider;
+import com.telcel.notifica.carga.provider.ProviderFactory;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,30 +15,14 @@ public class ConsultasDAO {
 
     private static final Logger logger = Logger.getLogger(ConsultasDAO.class.getName());
 
-    private static final String SQL_CONSULTA = "SELECT CL.NOMBRE, LF.FACTURA, LF.ROWID AS ID_FACTURA, LF.FECHA, "
-            + "LF.MONTO_COMPRA, LF.RFC, LF.STATUS, LF.REGION, "
-            + "SUBSTR(LF.OBSERVACIONES,0,58) AS OBSERVACIONES, LF.FECHA_TELCEL "
-            + "FROM LOG_FAC_SAP LF, CLIENTE CL "
-            + "WHERE MENSAJE='1' "
-            + "AND LF.RFC = CL.RFC "
-            + "AND TIPO_BOLSA = '1' "
-            + "AND LF.TIPO <> 'A' "
-            + "AND LF.STATUS <> 'C' "
-            + "ORDER BY CL.NOMBRE";
-
-    private static final String SQL_ACTUALIZA =
-            "UPDATE LOG_FAC_SAP "
-                    + "SET MENSAJE = ? "
-                    + "WHERE FACTURA = ? "
-                    + "AND ROWID = ?";
-
     public List<Factura> checaCarga() {
 
         List<Factura> facturas = new ArrayList<>();
+        DatabaseProvider provider = ProviderFactory.getProvider();
 
-        try (Connection con = ConnectionBCTR.getConnection();
-             PreparedStatement pstm = con.prepareStatement(SQL_CONSULTA);
-             ResultSet rs = pstm.executeQuery()) {
+        try (Connection con = provider.getConnection();
+             PreparedStatement ps = con.prepareStatement(provider.getConsultarFacturas());
+             ResultSet rs = ps.executeQuery()) {
 
             ResultSetMetaData meta = rs.getMetaData();
 
@@ -44,20 +32,11 @@ public class ConsultasDAO {
                 System.out.println(i + " -> " + meta.getColumnLabel(i));
             }
             System.out.println("=========================================");
+            FacturaMapper mapper = provider.getFacturaMapper();
             while (rs.next()) {
-
-                facturas.add(new Factura(
-                        rs.getString("NOMBRE"),
-                        rs.getString("FACTURA"),
-                        rs.getString("ID_FACTURA"),
-                        rs.getString("FECHA"),
-                        rs.getLong("MONTO_COMPRA"),
-                        rs.getInt("REGION"),
-                        rs.getString("OBSERVACIONES"),
-                        rs.getString("FECHA_TELCEL")));
-
+                facturas.add(mapper.map(rs));
             }
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error al obtener las facturas.", ex);
         }
 
@@ -66,8 +45,10 @@ public class ConsultasDAO {
 
     public void actualizaFactura(Set<String> notificadas) {
 
-        try (Connection con = ConnectionBCTR.getConnection();
-             PreparedStatement pstm = con.prepareStatement(SQL_ACTUALIZA)) {
+        DatabaseProvider provider = ProviderFactory.getProvider();
+
+        try (Connection con = provider.getConnection();
+             PreparedStatement pstm = con.prepareStatement(provider.getActualizarFactura())) {
 
             for (String datos : notificadas) {
 
@@ -90,7 +71,7 @@ public class ConsultasDAO {
                 }
             }
 
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error al actualizar las facturas.", ex);
         }
     }
