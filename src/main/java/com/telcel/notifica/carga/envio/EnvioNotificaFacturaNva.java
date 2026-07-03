@@ -9,7 +9,6 @@ import com.telcel.notifica.carga.utils.ConfigManager;
 import com.telcel.notifica.carga.utils.GetUtil;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -47,9 +46,6 @@ public class EnvioNotificaFacturaNva {
 
 
     public EnvioNotificaFacturaNva() {
-        this.enviaCorreo = new EnviaMail(
-                ConfigManager.get("correo.usuario"),
-                ConfigManager.get("correo.password"));
     }
 
     public static void main(String[] args) {
@@ -73,8 +69,10 @@ public class EnvioNotificaFacturaNva {
             logger.info("======================== INICIA PROCESO ========================");
             logger.info("Obteniendo facturas...");
             obtenerFacturasBolsaCentralizada();
-            logger.info("Procesando facturas...");
-            procesarFacturasBolsaCentralizada();
+            if (!this.consultaFacturaCentral.isEmpty()) {
+                logger.info("Procesando facturas...");
+                procesarFacturasBolsaCentralizada();
+            }
             // enviarCorreoResumenCEM();
             logger.info("======================== TERMINA PROCESO ========================");
         } catch (Exception ex) {
@@ -121,7 +119,7 @@ public class EnvioNotificaFacturaNva {
         logger.info("Inicia el procesamiento de facturas de Bolsa Centralizada.");
 
         for (Factura factura : consultaFacturaCentral) {
-            procesarFactura(factura, true);
+            procesarFactura(factura);
         }
 
         consultasDAO.actualizaFactura(factEnvia);
@@ -130,23 +128,19 @@ public class EnvioNotificaFacturaNva {
         logger.info("Finaliza el procesamiento de facturas de Bolsa Centralizada.");
     }
 
-    private void procesarFactura(Factura factura,
-                                 boolean bolsaCentralizada) {
+    private void procesarFactura(Factura factura) {
 
         String nombreCadena = factura.getNombre();
 
-        logger.info("Procesando factura: " + factura.getFactura());
+        logger.info("Procesando Factura: " + factura.getFactura());
 
         logger.info("COMENZANDO A OBTENER LOS CONTACTOS...");
 
-        List<Factura> destinatarios =
-                GetUtil.getDestinatariosFactura(nombreCadena);
+        List<Factura> destinatarios = GetUtil.getDestinatariosFactura(nombreCadena);
 
         String correos = obtenerCorreos(destinatarios);
 
-        String telefonos = bolsaCentralizada
-                ? obtenerTelefonos(destinatarios)
-                : factura.getTelefonos();
+        String telefonos = obtenerTelefonos(destinatarios);
 
         logger.info("TERMINO DE OBTENER LOS CONTACTOS...");
 
@@ -209,6 +203,13 @@ public class EnvioNotificaFacturaNva {
 
     private void enviarCorreo(Factura factura, String correos) {
 
+        Properties smtp = generarProperties();
+        this.enviaCorreo = new EnviaMail(
+                ConfigManager.get("correo.usuario"),
+                ConfigManager.get("correo.password"),
+                ConfigManager.get("correo.host"),
+                smtp);
+
         logger.info("COMENZANDO A PREPARAR EL CORREO...");
 
         NumberFormat nf = NumberFormat.getInstance();
@@ -259,17 +260,17 @@ public class EnvioNotificaFacturaNva {
                 ConfigManager.get("firma.telefono2"));
 
         try {
-            this.enviaCorreo.setFrom(ConfigManager.get("correo.remitente"));
-            this.enviaCorreo.setTo(correos);
-            this.enviaCorreo.setSubject("NOTIFICACION DE FACTURA PARA " + factura.getNombre());
+            enviaCorreo.setFrom(ConfigManager.get("correo.remitente"));
+            enviaCorreo.setTo(correos);
+            enviaCorreo.setSubject("NOTIFICACION DE FACTURA PARA " + factura.getNombre());
 
-            this.enviaCorreo.addContent(
+            enviaCorreo.addContent(
                     texto
                             + "</br></br><table align='center'><tr><td align='center'>"
                             + firma
                             + "</td></tr></table></div></body></html>");
 
-            this.enviaCorreo.sendMultipart();
+            enviaCorreo.sendMultipart();
             correoEnviado = "OK";
 
             factEnvia.add(factura.getFactura() + ",0," + factura.getIdFactura());
@@ -282,6 +283,31 @@ public class EnvioNotificaFacturaNva {
 
             correoEnviado = "NO";
         }
+    }
+
+    private Properties generarProperties() {
+        Properties smtp = new Properties();
+        try {
+            String port = ConfigManager.get("correo.smtp.port");
+            if (port != null && !port.isBlank()) {
+                smtp.put("mail.smtp.port", port);
+            }
+
+            String auth = ConfigManager.get("correo.smtp.auth");
+            if (auth != null && !auth.isBlank()) {
+                smtp.put("mail.smtp.auth", auth);
+            }
+
+            String tls = ConfigManager.get("correo.smtp.starttls.enable");
+            if (tls != null && !tls.isBlank()) {
+                smtp.put("mail.smtp.starttls.enable", tls);
+            }
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE,
+                    "Error al generar las propiedas para el envio del correo ",
+                    ex);
+        }
+        return smtp;
     }
 
     private void enviarSMS(Factura factura, String telefonos) {
@@ -314,7 +340,7 @@ public class EnvioNotificaFacturaNva {
 
         String[] telefonosArray = telefonos.split("\\|");
 
-        ClienteALARMA cliente = new ClienteALARMA();
+        ClienteALARMA cliente = new ClienteALARMA(ConfigManager.get("sms.url"));
 
         for (String telefono : telefonosArray) {
 

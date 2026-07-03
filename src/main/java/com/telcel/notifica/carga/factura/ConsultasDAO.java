@@ -25,17 +25,25 @@ public class ConsultasDAO {
              ResultSet rs = ps.executeQuery()) {
 
             ResultSetMetaData meta = rs.getMetaData();
-
-            System.out.println("===== COLUMNAS DEVUELTAS POR ORACLE =====");
-
+            /*
             for (int i = 1; i <= meta.getColumnCount(); i++) {
                 System.out.println(i + " -> " + meta.getColumnLabel(i));
             }
-            System.out.println("=========================================");
+            */
+
             FacturaMapper mapper = provider.getFacturaMapper();
             while (rs.next()) {
-                facturas.add(mapper.map(rs));
+                Factura factura = mapper.map(rs);
+                logger.info(String.format(
+                        "[BD] Factura=%s | Cadena=%s | Región=%d | Fecha=%s",
+                        factura.getFactura(),
+                        factura.getNombre(),
+                        factura.getRegion(),
+                        factura.getFecha()));
+
+                facturas.add(factura);
             }
+            logger.info("[BD] Total de facturas obtenidas: " + facturas.size());
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Error al obtener las facturas.", ex);
         }

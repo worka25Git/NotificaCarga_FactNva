@@ -14,10 +14,20 @@ public class OracleConnection {
 
         Class.forName(ConfigManager.get("db.oracle.driver"));
 
-        return DriverManager.getConnection(
-                ConfigManager.get("db.oracle.url"),
-                ConfigManager.get("db.oracle.user"),
-                ConfigManager.get("db.oracle.password"));
+        String url = ConfigManager.get("db.oracle.url");
+        String user = ConfigManager.get("db.oracle.user");
+        String password = ConfigManager.get("db.oracle.password");
+
+        if (url == null || url.isBlank()) {
+            throw new IllegalStateException("No se configuró 'db.oracle.url'");
+        }
+        if (user == null || user.isBlank()) {
+            throw new IllegalStateException("No se configuró 'db.oracle.user'");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException("No se configuró 'db.oracle.password'");
+        }
+        return DriverManager.getConnection(url, user, password);
     }
 
 }

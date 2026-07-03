@@ -5,6 +5,10 @@ target/
 .idea/
 *.iml
 
+
+*.jar
+*.zip
+
 # Logs
 logs/
 *.log

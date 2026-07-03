@@ -8,9 +8,12 @@ import java.io.FileReader;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GetUtil {
 
+    private static final Logger logger = Logger.getLogger(GetUtil.class.getName());
     private static final String RUTACONF = ConfigManager.get("ruta.contactos");
 
     private GetUtil() {
@@ -18,37 +21,55 @@ public class GetUtil {
 
     public static List<Factura> getDestinatariosFactura(String cadena) {
 
-        System.out.println("Entra a getDestinatariosFactura. Cadena: " + cadena);
+        logger.info(String.format(
+                "[CONTACTOS] Buscando contactos para la cadena: '%s'", cadena));
+
         List<Factura> destinatarios = new ArrayList<>();
         File archivo = new File(RUTACONF);
 
         if (!archivo.exists()) {
-            System.out.println("No se encontró el archivo de destinatarios.");
+            logger.severe(String.format(
+                    "[CONTACTOS] No se encontró el archivo de contactos: %s",
+                    archivo.getAbsolutePath()));
             return destinatarios;
         }
+        int registrosLeidos = 0;
+        int coincidencias = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
 
             String linea;
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
-                System.out.println("Linea leida: " + linea);
                 if (linea.isEmpty() || linea.contains("final")) {
                     continue;
                 }
+                registrosLeidos++;
                 String[] datos = linea.split("\\|");
-                System.out.println("Cadena BD: " + cadena);
-                System.out.println("Cadena archivo: " + datos[1]);
+
                 if (datos.length < 4) {
+                    logger.warning(String.format(
+                            "[CONTACTOS] Registro inválido: %s", linea));
                     continue;
                 }
-                if (cadena.contains(datos[1])) {
-                    destinatarios.add(new Factura(datos[1], datos[3], datos[2]));
-                    System.out.println("Se agregaron contactos a la lista.");
+                String cadenaArchivo = datos[1].trim();
+                if (cadena.equalsIgnoreCase(cadenaArchivo)) {
+                    coincidencias++;
+                    destinatarios.add(new Factura(
+                                                cadenaArchivo,
+                                                datos[3].trim(),
+                                                datos[2].trim()));
+                    logger.info(String.format(
+                            "[CONTACTOS] Contacto encontrado -> Cadena='%s', Correo='%s', Teléfono='%s'",
+                            cadenaArchivo,
+                            datos[3].trim(),
+                            datos[2].trim()));
                 }
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE,
+                    "[CONTACTOS] Error al leer el archivo de contactos.",
+                    ex);
         }
         return destinatarios;
     }

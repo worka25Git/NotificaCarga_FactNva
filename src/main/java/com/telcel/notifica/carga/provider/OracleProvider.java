@@ -7,7 +7,7 @@ import com.telcel.notifica.carga.sql.OracleSQL;
 
 import java.sql.Connection;
 
-public class OracleProvider implements DatabaseProvider{
+public class OracleProvider implements DatabaseProvider {
 
     @Override
     public Connection getConnection() throws Exception {
